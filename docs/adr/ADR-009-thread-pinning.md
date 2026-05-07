@@ -23,7 +23,7 @@ Removing OS intervention on our working threads by thread pinning via `pthread_s
 ## Consequences
 
 ### Positive
-- **OS intervention in thread scheduling of our working threads prevented:** When running our threads we want to make sure out working set, BTB, TLB is in the same core. Rescheduling of threads to another core is costly not only in terms of cache loading but also in branch prediction and table pages. 
+- **OS intervention in thread scheduling of our working threads prevented:** When running our threads we want to make sure our working set, BTB, TLB is in the same core. Rescheduling of threads to another core is costly not only in terms of cache loading but also in branch prediction and table pages. 
 
 ### Negative
 - **Those cores are fully dedicated — no sharing:** while your pinned threads are spinning at 100% CPU, those cores are unavailable for anything else on the system. 
