@@ -28,4 +28,4 @@ Implementing price level indexing using fixed-point ticks and sorted contiguous 
 ### Negative
 
 - **When price matching we need to keep track of indexes rather than struct:** This is a place where bugs might happen due to developers being usually used to deal with struct. 
-- **Correctness is heavy correlated to `tick_size`:** Correctness depends entirely on `tick_size` being accurate at the conversion boundary — a wrong value silently corrupts all internal prices
+- **Correctness is heavily correlated to `tick_size`:** Correctness depends entirely on `tick_size` being accurate at the conversion boundary — a wrong value silently corrupts all internal prices

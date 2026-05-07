@@ -22,7 +22,7 @@ Implementing MPSC Market Data Aggregation as N-SPSC queues with priority polling
 ## Consequences
 
 ### Positive
-- **Market Data Aggregation OS-free:** No CAS, no thread coordination needed, each producers freely owns its tails exclusively. 
+- **Market Data Aggregation OS-free:** No CAS, no thread coordination needed, each producer freely owns its tails exclusively. 
 - **Backpressure isolated per feed:** A slow consumer on one high-priority queue doesn't directly affect the other queues. One fast producer cannot starve all others.
 
 ### Negative

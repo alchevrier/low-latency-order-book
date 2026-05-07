@@ -30,7 +30,7 @@ The release/acquire pair on the tail pointer is the only synchronisation needed.
 
 ### Positive
 
-- **No OS intervention nor flushes of cache needed:** Here we only use CPU instructions to ensure correctness, the OS never intervenes here and we have no write-side RFO (Invalidation done on the producer cache-line) as well because the consumer will only read the index/payload commited by the producer. 
+- **No OS intervention nor flushes of cache needed:** Here we only use CPU instructions to ensure correctness, the OS never intervenes here and we have no write-side RFO (Invalidation done on the producer cache-line) as well because the consumer will only read the index/payload committed by the producer. 
 - **Acquire/release as compiler and CPU reordering guards**: The acquire/release pair prevents the compiler and CPU from reordering across the handoff. On x86, the CPU already has strong ordering (TSO), so the acquire/release only costs a compiler barrier on x86. On ARM it would generate actual fence instructions.
 
 
