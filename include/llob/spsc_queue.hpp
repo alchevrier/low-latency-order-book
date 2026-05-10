@@ -34,6 +34,13 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool empty() const
+    {
+        auto current_consumer = consumer_index_.load(std::memory_order_relaxed);
+        auto current_producer = producer_index_.load(std::memory_order_relaxed);
+        return current_consumer == current_producer;
+    }
+
 private:
     alignas(64) T buffer_[Capacity];
     alignas(64) std::atomic<std::size_t> producer_index_;
