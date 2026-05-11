@@ -18,7 +18,7 @@ public:
     MPSCQueue() : queues_(), pop_count_(), last_served_() {}
 
     struct ProducerHandle {
-        bool push(const T& item) {
+        bool push(const T& item) const {
             return queue_->push(item);
         }
 
