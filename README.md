@@ -18,6 +18,26 @@ Order Intake ──────────── SPSC ────────�
 - **PinnedThread**: `std::thread` + `pthread_setaffinity_np`, asserted on startup. See [ADR-009](docs/adr/ADR-009-thread-pinning.md).
 - **Release/acquire memory ordering** on all queue handoffs — no fences, no OS, no seq_cst. See [ADR-007](docs/adr/ADR-007-memory-ordering-queue-handoff.md).
 
+## Benchmarks
+
+Measured on a Ryzen 5600 (12 × 5600 MHz), GCC 13.3.0 `-O3`, threads pinned via `pthread_setaffinity_np`.
+
+### Matching latency — `best_bid()` read from SOA order book
+
+| Scenario | Median | p99 | p99.9 | p99.99 |
+|---|---|---|---|---|
+| Isolated (no concurrent writes) | 2.49 ns | 4.06 ns | 5.04 ns | 16.0 ns |
+| Concurrent (book writer on core 1, matcher on core 2) | 2.58 ns | 3.53 ns | 10.6 ns | 10.6 ns |
+
+**Seqlock overhead under live write pressure: < 1 ns at median and p99.**
+
+Tail divergence (p99.9+) is OS scheduling jitter, not structural — CPU frequency scaling was enabled during these runs.
+
+### Memory profile (Valgrind massif)
+
+- **Zero heap allocation in the hot path** — SOA arrays are stack/static, seqlock counter embedded in the object.
+- Peak heap: 14.6 MB — entirely Google Benchmark framework (result storage, statistics).
+
 ## Toolchain
 
 | Tool   | Version  |
@@ -28,6 +48,27 @@ Order Intake ──────────── SPSC ────────�
 | GCC    | 13.3.0   |
 | GTest  | latest   |
 | GBench | latest   |
+
+## Build
+
+```bash
+conan install . --output-folder=build --build=missing
+source build/conanbuild.sh
+cmake -B build -DCMAKE_PREFIX_PATH="$(pwd)/build" -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+### Run tests
+
+```bash
+./build/tests/tests
+```
+
+### Run benchmarks
+
+```bash
+./build/benchmarks/bench_matching
+```
 
 ## Architecture Decision Records
 
