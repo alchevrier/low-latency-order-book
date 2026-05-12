@@ -3,6 +3,7 @@ add_executable(tests
     test_spsc_queue.cpp
     test_mpsc_queue.cpp
     test_pinned_thread.cpp
+    test_order_book.cpp
 )
 target_link_libraries(tests PRIVATE llob GTest::gtest_main)
 
