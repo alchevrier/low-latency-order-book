@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 #include <llob/order_book.hpp>
 #include <llob/market_data_event.hpp>
+#include <thread>
+#include <immintrin.h>
+#include <cstdlib> 
+#include <ctime> 
 
 TEST(OrderBook, SingleAddBidBestBid)
 {
@@ -109,4 +113,38 @@ TEST(OrderBook, CapacityFullWorstAskIsHighestReplaced)
     order_book.add(event_3);
 
     ASSERT_EQ(order_book.best_ask(), 99);
+}
+
+TEST(OrderBook, AddAndBestBidInDifferentThread)
+{
+    constexpr int N = 1024;
+    constexpr int64_t MIN_PRICE = 90;
+    constexpr int64_t MAX_PRICE = 110;
+    llob::OrderBook<50> order_book;
+    std::atomic<bool> ready{false};
+
+    std::srand(std::time(nullptr)); 
+
+    std::thread producer([&order_book, &ready]() {
+        for (int i = 0; i < N; ++i) {
+            int64_t price = (std::rand() % (MAX_PRICE - MIN_PRICE + 1)) + MIN_PRICE;
+            llob::MarketDataEvent event_1{price, 10, 1, 1, llob::Side::Bid, llob::EventType::Add};
+            order_book.add(event_1);
+
+            ready.store(true, std::memory_order_release);
+        }
+    });
+
+    std::thread consumer([&order_book, &ready]() {
+        while (!ready.load(std::memory_order_acquire)) {
+            _mm_pause();
+        }
+        for (int i = 0; i < N; i++) {
+            auto best_bid = order_book.best_bid();
+            ASSERT_TRUE(best_bid >= MIN_PRICE && best_bid <= MAX_PRICE);
+        }
+    });
+
+    producer.join();
+    consumer.join();
 }
