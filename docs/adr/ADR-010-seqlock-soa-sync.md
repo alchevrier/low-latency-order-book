@@ -27,7 +27,7 @@ The reader:
 - **Read is free when no write is happening** — just two counter reads wrapping the data read, both likely cache-hot. Sub-nanosecond overhead on the happy path
 - **Write doesn't block the reader** — the reader just retries. No mutex, no OS, no sleep
 
-**The memory ordering**: the writer uses release on the second counter increment. The reader uses acquire on both counter reads. Same pattern as ADR-007 — release/acquire pair is the only synchronisation needed.
+**The memory ordering**: the writer uses release on the second counter increment. The reader uses acquire on both counter reads. Same pattern as ADR-007 — release/acquire pair is the only synchronisation needed. On x86 (TSO — Total Store Order), release and acquire compile to plain `MOV` instructions — no `MFENCE`, no `LOCK` prefix. The hardware enforces the ordering. This is why the happy-path seqlock cost is sub-nanosecond on x86 (confirmed by benchmark: median 2.49 ns including the data read itself). On ARM, `STLR`/`LDAR` would be emitted instead — still no full fence, but explicit load/store ordering instructions.
 
 **Why not a mutex:** a mutex puts the reader to sleep if the writer holds it. Sleep = OS intervention = microseconds of jitter. Unacceptable. The seqlock retry is nanoseconds.
 
