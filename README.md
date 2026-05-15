@@ -24,6 +24,8 @@ Each component is implemented and unit-tested independently. The end-to-end pipe
 | Seqlock | embedded in `order_book.hpp` | Writer increments sequence counter; reader retries on odd count. Guarantees freshness. [ADR-010](docs/adr/ADR-010-seqlock-soa-sync.md) |
 | PinnedThread | `include/llob/pinned_thread.hpp` | `std::thread` + `pthread_setaffinity_np`, asserted on startup. [ADR-009](docs/adr/ADR-009-thread-pinning.md) |
 
+23 unit tests across 5 test suites covering all components: SPSC queue, MPSC queue, order book (bid/ask invariants, capacity, cross-thread), pinned thread, and concept constraints.
+
 ### Benchmark setup
 
 The benchmark wires two pinned threads directly to the SOA order book to measure seqlock overhead under live write pressure — without the queues, which are a separate concern:
