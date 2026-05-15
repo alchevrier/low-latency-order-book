@@ -28,7 +28,7 @@ constexpr int64_t MAX_PRICE = 110;
 static void BM_MatchingIsolated(benchmark::State& state) {
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
+    CPU_SET(4, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
 
     static llob::OrderBook<N> order_book;
@@ -58,7 +58,7 @@ static void BM_MatchingIsolated(benchmark::State& state) {
 static void BM_MatchingConcurrent(benchmark::State& state) {
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(2, &cpuset);
+    CPU_SET(4, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
 
     llob::OrderBook<N> order_book;
@@ -80,7 +80,7 @@ static void BM_MatchingConcurrent(benchmark::State& state) {
     }
 
     std::atomic<bool> stop{false};
-    llob::PinnedThread writer{1, [&]() {
+    llob::PinnedThread writer{6, [&]() {
         std::mt19937 rng(42);
         std::uniform_int_distribution<int64_t> dist(MIN_PRICE, MAX_PRICE);
 

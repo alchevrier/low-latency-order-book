@@ -1,10 +1,12 @@
 #pragma once
 #include <llob/market_data_event.hpp>
-#include <cstddef>
 #include <algorithm>
 #include <array>
+#include <atomic>
+#include <cstddef>
 #include <cstring>
 #include <functional>
+#include <limits>
 
 namespace llob
 {
