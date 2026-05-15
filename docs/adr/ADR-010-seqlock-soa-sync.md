@@ -31,6 +31,19 @@ The reader:
 
 **Why not a mutex:** a mutex puts the reader to sleep if the writer holds it. Sleep = OS intervention = microseconds of jitter. Unacceptable. The seqlock retry is nanoseconds.
 
+**Why not RCU or hazard pointers — correctness, not just performance:**
+
+RCU (Read-Copy-Update) and hazard pointers are designed to let readers complete on *old* data safely. That is their entire purpose: defer reclamation until all readers have finished with the previous version. A reader can legitimately return a value that is already logically superseded. This is safe from a memory standpoint but **inadmissible in a market data context**.
+
+The seqlock protocol enforces a freshness invariant: a reader either completes with a consistent, current view of the order book, or it detects a concurrent write and retries. It cannot return a superseded price to the caller without the caller knowing.
+
+This has direct regulatory implications:
+
+- **US — Reg NMS §242.611 (Order Protection Rule):** Trading centers must maintain policies "reasonably designed to prevent trade-throughs" — i.e. executing at a price inferior to a protected quotation (NBBO). Acting on a stale best bid while a better protected quote exists is a trade-through. Consequence: FINRA Rule 11892 allows the trade to be declared **null and void**.
+- **EU — MiFID II Article 27(1) (Directive 2014/65/EU):** Investment firms must take "all sufficient steps to obtain [...] the best possible result for their clients", including price. Trading on a superseded best bid violates the best execution obligation.
+
+The seqlock retry loop is not just a latency optimisation — it is the mechanism that enforces the market data freshness invariant required for compliance. RCU would be unsafe here regardless of its performance characteristics.
+
 ## Decision
 
 Using Seqlock for SOA Order Book Reader-Writer Synchronisation. 
@@ -45,4 +58,4 @@ Using Seqlock for SOA Order Book Reader-Writer Synchronisation.
 ### Negative
 
 - **Retry under write pressure:** if the book writer is updating frequently (frequent top-of-book updates), the matcher may retry many times before getting a clean read. Under extreme conditions this could spin for multiple microseconds — rare but worth acknowledging. Retry pressure is highest during market open/close auctions and news events when top-of-book updates are most frequent — this manifests as p99.9 latency spikes, not average-case degradation.
-- **Reader reads potentially stale data mid-retry:** during the retry window the matcher is re-reading data that may have changed multiple times. The seqlock guarantees consistency but not freshness — the matched price is the book state at the moment of a successful read, which may already be one update behind. For real-time analysis this is acceptable and expected.
+- **Retry under write pressure causes repeated reads:** during the retry window the matcher re-reads data that may have changed multiple times. All failed reads are discarded — the seqlock guarantees that only a consistent, current snapshot is returned to the caller. Note: the successful read reflects the book state at the moment the retry completes, not at the moment the original call was made. Under high update rates (open/close auctions, news events) several retries may occur before a clean read lands, manifesting as p99.9 latency spikes.
