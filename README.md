@@ -41,7 +41,7 @@ Reader thread (CPU4) ──► order_book.best_bid() ◄─┘
 Measured on an Intel i5-12400 (consumer desktop, HT enabled, shared OS — not a tuned server), GCC 13.3.0 `-O3`.  
 Benchmark threads pinned via `pthread_setaffinity_np`. `performance` governor set. No `isolcpus`.
 
-- Reader (matcher) pinned to **CPU4**, writer (book) pinned to **CPU6** — separate physical cores with idle HT siblings.
+- Reader (matcher) pinned to **CPU4**, writer (book) pinned to **CPU6** — separate physical cores with idle HT siblings. Core selection rationale: [ADR-009](docs/adr/ADR-009-thread-pinning.md).
 
 ### Matching latency — `best_bid()` read from SOA order book
 
@@ -50,7 +50,7 @@ Benchmark threads pinned via `pthread_setaffinity_np`. `performance` governor se
 | Isolated (no concurrent writes) | 2.50 ns | 7.22 ns | 9.01 ns | 36.7 ns |
 | Concurrent (book writer CPU6, matcher CPU4) | 2.57 ns | 3.33 ns | 7.94 ns | 7.94 ns |
 
-**Seqlock overhead under live write pressure: < 1 ns at median.** Tail divergence is OS scheduling jitter — isolated runs 10× more repetitions (10,000 vs 1,000), capturing more rare preemption events. The median is the meaningful comparison.
+**Seqlock overhead under live write pressure: < 1 ns at median.** Tail divergence (p99.9+) is kernel jitter — timer interrupts, RCU callbacks, and HT sibling activity on CPU5/CPU7 that thread pinning alone cannot prevent. HT is enabled and siblings remain live; the kernel can schedule work on them at any time, polluting the shared L1/L2. Isolated runs use 10× more repetitions (10,000 vs 1,000), capturing more rare events. The median is the meaningful comparison. See [ADR-009](docs/adr/ADR-009-thread-pinning.md) for the full analysis.
 
 ### HT interference — `alignas(64)` is not enough
 
