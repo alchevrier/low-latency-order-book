@@ -50,6 +50,8 @@ Benchmark threads pinned via `pthread_setaffinity_np`. `performance` governor se
 | Isolated (no concurrent writes) | 2.50 ns | 7.22 ns | 9.01 ns | 36.7 ns |
 | Concurrent (book writer CPU6, matcher CPU4) | 2.57 ns | 3.33 ns | 7.94 ns | 7.94 ns |
 
+> **Methodology note.** These figures are the P99/P99.9/P99.99 of *per-repetition means* (each repetition averages 100 individual calls), not of individual call latency. A single 500 ns spike in a batch of 100 contributes only 5 ns to the mean — the tail is systematically suppressed. When measured correctly via RDTSC (one timestamp per individual call), the true distribution is: isolated P99.9 ≈ 14 ns, concurrent P99.9 ≈ **6.3 µs** — a 230× difference that batch-averaging hides. The [`low-latency-feed-handler`](https://github.com/alchevrier/low-latency-feed-handler) project, which builds on top of this repo, explains this in detail and applies the correct per-call RDTSC methodology throughout.
+
 **Seqlock overhead under live write pressure: < 1 ns at median.** Tail divergence (p99.9+) is kernel jitter — timer interrupts, RCU callbacks, and HT sibling activity on CPU5/CPU7 that thread pinning alone cannot prevent. HT is enabled and siblings remain live; the kernel can schedule work on them at any time, polluting the shared L1/L2. Isolated runs use 10× more repetitions (10,000 vs 1,000), capturing more rare events. The median is the meaningful comparison. See [ADR-009](docs/adr/ADR-009-thread-pinning.md) for the full analysis.
 
 ### HT interference — `alignas(64)` is not enough
